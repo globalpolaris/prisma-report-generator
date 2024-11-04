@@ -43,16 +43,11 @@ def main():
             "limit": page_size,
             "offset": offset
         }
-        # if offset == 10:
-        #     break
+
         response = requests.request("GET", url, headers=headers, data=payload, params=params)
         print("Response Code: {}".format(response.status_code))
         if response.status_code == 200:
-            # print("ERROR! {} - {}".format(response.status_code, response.text))
-            # break
-            
             events = response.json()
-            # json_object = json.loads(response.text)
             if not events:
                 print("\nAll events have been fetched!\n")
                 break
@@ -90,10 +85,7 @@ def main():
             "path": newReport.path,
             "image": newReport.image
         })
-        # reports.append(Report(report["eventID"], report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"]))
-
-    # print(len(reports))
-    # print(json.dumps(reports, indent=4))
+       
     with open('end_data.json', 'w') as f:
         f.write(json.dumps(reports, indent=4))
      
@@ -108,7 +100,7 @@ def write_to_excel(filename, cols, data):
     workbook = xlsxwriter.Workbook(filepath)
     worksheet = workbook.add_worksheet("{}".format(date_now.strftime("%Y-%M-%d")))
 
-    
+    # WRITE HEADERS #
     headers = ["url", "time", "attack_type", "endpoint", "src_ip", "path", "image"]
 
     header_format = workbook.add_format({
@@ -119,23 +111,14 @@ def write_to_excel(filename, cols, data):
     })
 
     worksheet.write_row("A1", cols, header_format)
-    # for col_num, header in enumerate(headers):
-    #     # Determine max length across all items in data
-    #     max_length = max(
-    #         len(str(item.get(header, ""))) 
-    #         for record in data 
-    #         for item in record.get("url", []) if isinstance(item, dict)
-    #     )
-    #     max_length = max(max_length, len(header))  # Include header length
-    #     worksheet.set_column(col_num, col_num, max_length + 2)  # Add padding
+
+    # WRITE ROW DATA #
 
     cell_format = workbook.add_format({
         'border': 1,
         'align': 'left',
         'valign': 'top'
     })
-    # for row, obj in enumerate(data, start=1):
-    #     worksheet.write_row(row, 0, [obj.id, obj.parse_time(), obj.url, obj.attack_type, obj.endpoint, obj.src_ip, obj.path, obj.image], cell_format)
     row = 1
     prev_url = None
     merge_start_row = row
@@ -165,6 +148,9 @@ def write_to_excel(filename, cols, data):
             max_lengths[5] = max(max_lengths[5], len(item.get("path", "")))
             max_lengths[6] = max(max_lengths[6], len(item.get("image", "")))
             row += 1
+
+    # WRITE ADJUST CELL WIDTH #
+
     for col_num, length in enumerate(max_lengths):
         worksheet.set_column(col_num, col_num, length + 2)  # Add 2 for padding
 
