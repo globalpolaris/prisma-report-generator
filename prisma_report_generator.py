@@ -160,11 +160,23 @@ def main():
     print("Select operation:")
     print("1. Generate WAAS Report")
     print("2. Generate Container Model Report")
+    print("3. Generate All Report")
     opt = int(input(">> "))
     if opt == 1:
         generate_waas_report()
     elif opt == 2:
         generate_container_model_report()
+    elif opt == 3:
+        print("Generating all report (0/2)")
+        print("Generating WAAS Report...")
+        generate_waas_report()
+        print("WAAS Report Generated")
+        print("Generating all report (1/2)")
+        print("Generating Container Models Report...")
+        generate_container_model_report()
+        print("Container Models Generated")
+        print("Generating all report (2/2)")
+        print("All reports generated! Exiting..")
     
 def write_container_model_to_excel(filename, cols, data):
     directory = "Container Model Reports"
