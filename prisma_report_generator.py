@@ -123,7 +123,7 @@ def generate_waas_report():
             for attempt in range(1, max_attempts + 1):
                 print(f"Rate limited. Retrying in {attempt * 2} seconds...")
                 time.sleep(attempt * 2)  # Exponential backoff
-                response = requests.request("GET", url, headers=headers, data=payload, params=params)
+                response = requests.request("GET", url, headers=headers, params=params)
                 if response.status_code == 200:
                     break
         else:
