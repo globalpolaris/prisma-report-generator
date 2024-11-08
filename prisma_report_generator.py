@@ -5,7 +5,7 @@ load_dotenv()
 date_now = datetime.datetime.now()
 
 class WAAS:
-    def __init__(self, time, url, attack_type, endpoint, src_ip, path, image):
+    def __init__(self, time, url, attack_type, endpoint, src_ip, path, image, effect):
         self.time = time
         self.url = url
         self.attack_type = attack_type
@@ -13,6 +13,7 @@ class WAAS:
         self.src_ip = src_ip
         self.path = path
         self.image = image
+        self.effect = effect
     
     def __str__(self):
         return f"Time: {self.time}\nURL: {self.url}\nAttack Type: {self.attack_type}\nEndpoint: {self.endpoint}\nIP: {self.src_ip}\nPath: {self.path}\nImage: {self.image}\n\n"
@@ -113,6 +114,7 @@ def generate_waas_report():
             events = response.json()
             if not events:
                 print("\nAll events have been fetched!\n")
+                print("Events: ", events)
                 break
 
             all_events.extend(events)
@@ -136,7 +138,7 @@ def generate_waas_report():
 
     reports = {}
     for report in all_events:
-        newReport = WAAS(report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"])
+        newReport = WAAS(report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"], report["effect"])
         if newReport.url not in reports:
             reports[newReport.url] = []
         reports[newReport.url].append({
@@ -145,13 +147,14 @@ def generate_waas_report():
             "endpoint": newReport.endpoint,
             "src_ip": newReport.src_ip,
             "path": newReport.path,
-            "image": newReport.image
+            "image": newReport.image,
+            "effect": newReport.effect
         })
        
     with open('end_data.json', 'w') as f:
         f.write(json.dumps(reports, indent=4))
      
-    columns = ["URL", "Time", "Attack Type", "API Endpoint", "IP Address", "Path", "Image"]
+    columns = ["URL", "Time", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
     filename = "WAAS_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
     write_waas_to_excel(filename, columns, reports)
 
@@ -182,7 +185,7 @@ def write_container_model_to_excel(filename, cols, data):
     directory = "Container Model Reports"
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
-    workbook = xlsxwriter.Workbook(filepath)
+    workbook = xlsxwriter.Workbook(filepath, {'strings_to_urls': False})
     worksheet = workbook.add_worksheet("{}".format(date_now.strftime("%Y-%m-%d")))
     
     # WRITE HEADERS #
@@ -226,11 +229,11 @@ def write_waas_to_excel(filename, cols, data):
     directory = "WAAS Reports"
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
-    workbook = xlsxwriter.Workbook(filepath)
+    workbook = xlsxwriter.Workbook(filepath, {'strings_to_urls': False})
     worksheet = workbook.add_worksheet("{}".format(date_now.strftime("%Y-%m-%d")))
 
     # WRITE HEADERS #
-    headers = ["url", "time", "attack_type", "endpoint", "src_ip", "path", "image"]
+    headers = ["url", "time", "attack_type", "endpoint", "src_ip", "path", "image", "effect"]
 
     header_format = workbook.add_format({
         'bold': True,
@@ -255,8 +258,8 @@ def write_waas_to_excel(filename, cols, data):
     for url, items in data.items():
         for item in items:
             if url != prev_url:
-                if prev_url is not None:
-                    worksheet.merge_range(merge_start_row, 0, row - 1, 0, prev_url, cell_format=cell_format)
+                # if prev_url is not None:
+                #     worksheet.merge_range(merge_start_row, 0, row - 1, 0, prev_url, cell_format=cell_format)
                 
                 prev_url = url
                 merge_start_row = row
@@ -267,7 +270,8 @@ def write_waas_to_excel(filename, cols, data):
             item.get("endpoint", ""),
             item.get("src_ip", ""),
             item.get("path", ""),
-            item.get("image", "")
+            item.get("image", ""),
+            item.get("effect", "")
             ], cell_format=cell_format)
             max_lengths[0] = max(max_lengths[0], len(url))  # URL column
             max_lengths[1] = max(max_lengths[1], len(item.get("time", "")))
@@ -276,6 +280,7 @@ def write_waas_to_excel(filename, cols, data):
             max_lengths[4] = max(max_lengths[4], len(item.get("src_ip", "")))
             max_lengths[5] = max(max_lengths[5], len(item.get("path", "")))
             max_lengths[6] = max(max_lengths[6], len(item.get("image", "")))
+            max_lengths[7] = max(max_lengths[7], len(item.get("effect", "")))
             row += 1
 
     # WRITE ADJUST CELL WIDTH #
@@ -286,6 +291,7 @@ def write_waas_to_excel(filename, cols, data):
     workbook.close()
     print("Report saved: {}".format(filepath))
     print("Total Unique URL: ", len(data))
+    print()
 
 if __name__ == "__main__":
     main()
