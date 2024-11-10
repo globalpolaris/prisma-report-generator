@@ -90,6 +90,7 @@ def generate_container_model_report():
     
     columns = ["Image", "Cluster", "Namespace", "OS", "Entrypoint", "State", "Collections"]
     filename = "Container_Model_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
+    return all_models
     write_container_model_to_excel(filename=filename, cols=columns, data=all_models)
     
 def generate_waas_report():
@@ -157,6 +158,9 @@ def generate_waas_report():
     columns = ["URL", "Time", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
     filename = "WAAS_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
     write_waas_to_excel(filename, columns, reports)
+
+
+    
 
 def main():
     print("====== PRISMA CLOUD CWP REPORT GENERATOR ======")
