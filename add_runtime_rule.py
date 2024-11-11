@@ -301,24 +301,35 @@ def main():
     'Accept': 'application/json',
     'Authorization': 'Basic {}'.format(os.getenv("TOKEN"))
     }
-    response = requests.request("GET", url, headers=headers)
-    all_rules = response.json()
+    with open('container_put.json', 'r') as f:
+        data = json.load(f)
+    
+    # print(json.dumps(data, indent=2))
+    # put_to_prisma(data) 
+    # response = requests.request("GET", url, headers=headers)
+    # all_rules = response.json()
+    
+    all_rules = {
+        "rules": []
+    }
     all_runtime = add_runtime_rule(".\\result_data_container_json_ntt.json")
     if "rules" in all_rules:
         for new_rule in all_runtime:
             all_rules["rules"].append(new_rule.dump_json())
     
-    # print(json.dumps(all_rules, indent=2))
-    # print(all_rules)
-    # print(type(all_rules))
-    with open("result_rules.json", "w") as f:
-        f.write(json.dumps(all_rules, indent=2))
     
-    # put_to_prisma(json.dumps(all_rules, indent=2))
+    print(json.dumps(all_rules, indent=2))
+    # print(all_rules)
+    # # print(type(all_rules))
+    # with open("result_rules.json", "w") as f:
+    #     f.write(json.dumps(all_rules, indent=2))
+    
+    # # put_to_prisma(json.dumps(all_rules, indent=2))
     put_to_prisma(all_rules)
-    # if len(all_rules) > 0 :
-    #     put_to_prisma(all_rules)
+    # # if len(all_rules) > 0 :
+    # #     put_to_prisma(all_rules)
         
+    
 
 if __name__ == '__main__':
     main() #
