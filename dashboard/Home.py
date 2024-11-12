@@ -60,6 +60,16 @@ st.markdown(
     """
     
 )
+
+@st.dialog("Delete Report?")
+def delete_report(filename):
+    st.write("**{}** will be deleted permanently.".format(filename))
+
+    if st.button("Delete"):
+        db.delete_file(data["fullpath"])
+        os.remove(data["fullpath"])
+        st.rerun()
+        
 data_report_waas = []
 data_filename = db.get_files()
 if len(data_filename) == 0:
@@ -96,9 +106,8 @@ else:
                 st.download_button("Download", data=file_data, file_name=data["filename"], mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             with del_col:
                 if st.button("Delete", key=data["fullpath"]):
-                    db.delete_file(data["fullpath"])
-                    os.remove(data["fullpath"])
-                    st.rerun()
+                    delete_report(data["filename"])
+                        
             
 st.markdown(
     """
@@ -106,5 +115,3 @@ st.markdown(
     """
     
 )
-
-st.sidebar.info("Select a page above.")

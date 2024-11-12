@@ -53,7 +53,7 @@ if "filename" in st.query_params:
             # print(df_last_3_days)
             attack_time = df_last_3_days.groupby([df['Time'].dt.floor('h'), 'AttackType']).size().reset_index(name='Count')
             attack_time.set_index(['Time', 'AttackType'], inplace=True)
-            attack_time = attack_time.unstack().resample('15T').interpolate('linear').stack().reset_index()
+            attack_time = attack_time.unstack().resample('15min').interpolate('linear').stack().reset_index()
             attack_time['Count'] = attack_time['Count'].round().astype(int)
             
             all_option = "Select All"

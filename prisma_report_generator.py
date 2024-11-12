@@ -119,6 +119,7 @@ def generate_waas_report():
         print("Response Code: {}".format(response.status_code))
         if response.status_code == 200:
             events = response.json()
+            print(json.dumps(events, indent=2))
             if not events:
                 print("\nAll events have been fetched!\n")
                 print("Events: ", events)

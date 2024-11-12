@@ -325,11 +325,12 @@ def main():
     #     f.write(json.dumps(all_rules, indent=2))
     
     # # put_to_prisma(json.dumps(all_rules, indent=2))
-    put_to_prisma(all_rules)
+    # put_to_prisma(all_rules)
     # # if len(all_rules) > 0 :
     # #     put_to_prisma(all_rules)
         
     
 
 if __name__ == '__main__':
-    main() #
+    # main() #
+    pass
