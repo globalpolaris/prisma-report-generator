@@ -1,6 +1,12 @@
 import requests, os, json, xlsxwriter, datetime, time
 from dotenv import load_dotenv
+import sys
+import os
 
+# Add the Dashboard folder to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'dashboard'))
+
+import db
 load_dotenv()
 date_now = datetime.datetime.now()
 
@@ -293,6 +299,9 @@ def write_waas_to_excel(filename, cols, data):
         worksheet.set_column(col_num, col_num, length + 2)  # Add 2 for padding
 
     workbook.close()
+    gmt_7 = datetime.timezone(datetime.timedelta(hours=7))
+    curr_time = datetime.datetime.now(gmt_7)
+    db.insert_file(filepath, curr_time)
     print("Report saved: {}".format(filepath))
     print("Total Unique URL: ", len(data))
     print()
