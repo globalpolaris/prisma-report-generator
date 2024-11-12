@@ -1,0 +1,13 @@
+version: "1.0"
+services:
+  streamlit:
+    build:
+    ports:
+      - "8501:8501"
+    environment:
+      - TOKEN=${TOKEN}
+      - CONSOLE_PATH=${CONSOLE_PATH}
+    volumes:
+      - .:/app
+    env_file:
+      - .env
