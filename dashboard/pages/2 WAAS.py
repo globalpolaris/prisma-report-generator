@@ -6,12 +6,13 @@ from datetime import timedelta, datetime
 import urllib.parse, os
 
 st.set_page_config(page_title='Prisma Cloud Report Dashboard', page_icon=':bar_chart:', layout='wide')
-
+if st.button("Clear Cache"):
+    st.cache_data.clear()
 if "filename" in st.query_params:
     filename = st.query_params["filename"]
     
     if os.path.exists(filename):
-        @st.cache_data
+        # @st.cache_data
         def load_data():
 
             df = pd.read_excel(
@@ -22,7 +23,6 @@ if "filename" in st.query_params:
             return df
 
         # --- SIDEBAR ---
-
         st.sidebar.header("Filter")
         # url = st.sidebar.multiselect(
         #     "Select URL:",
@@ -34,29 +34,36 @@ if "filename" in st.query_params:
         def process_data(df):
             attack_type_options = df["AttackType"].unique().tolist()
             image_options = df["Image"].unique().tolist() 
+            namespace_options = df["Namespace"].unique().tolist()
                       
             all_option = "Select All"
             attack_type_choices = [all_option] + attack_type_options
             image_choices = [all_option] + image_options
-
+            namespace_choices = [all_option] + namespace_options
             # attack_type = st.sidebar.multiselect("Attack Type:", options=attack_type_choices, default=[])
-            image = st.sidebar.multiselect(
-                "Image:",
-                options=image_choices,
+            # image = st.sidebar.multiselect(
+            #     "Image:",
+            #     options=image_choices,
+            #     default=[]
+            # )
+            namespace = st.sidebar.multiselect(
+                "Namespace:",
+                options=namespace_choices,
                 default=[]
             )
 
             # attack_type_condition = attack_type_options if all_option in attack_type or not attack_type else attack_type
-            image_condition = image_options if all_option in image or not image else image
+            # image_condition = image_options if all_option in image or not image else image
+            namespace_condition = namespace_options if all_option in namespace or not namespace else namespace
 
             df_selection = df.query(
-                "Image in @image_condition"
+                "Namespace in @namespace_condition"
             )
             image_attack_counts = df["Image"].value_counts().head(5).sort_values(ascending=True)
             
             ## Filter by Image->URL->Path
             # if image_condition != image_options:
-            filtered_by_image = df[df["Image"].isin(image_condition)]
+            filtered_by_image = df[df["Namespace"].isin(namespace_condition)]
             host_options = filtered_by_image["Host"].unique().tolist()
             host = st.sidebar.multiselect("Host:", options=[all_option] + host_options, default=[])
             host_condition = host_options if all_option in host or not host else host
@@ -110,6 +117,8 @@ if "filename" in st.query_params:
         )
 
         df = load_data()
+        print(df)
+        
         images, top_5_host_unique_attacks, max_unique_attacks_url,max_unique_attacks_count, unique_attack_counts, df_selection, host_counts, attack_counts, filtered_attack_count, attacker_ip, attack_time, attack_type_choices, image_choices = process_data(df)
         # def plot_chart_top_url_distinct_attack(url_distinct):
             
@@ -148,7 +157,7 @@ if "filename" in st.query_params:
 
             # Update layout
             fig.update_layout(
-                title="Smoothed Attack Type Frequency Over the Last 3 Days (Spline)",
+                title="Attack Type Frequency Over the Last 3 Days (Spline)",
                 xaxis_title="Time",
                 yaxis_title="Number of Attacks",
                 legend_title="Attack Type"

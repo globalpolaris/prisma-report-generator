@@ -11,9 +11,10 @@ load_dotenv()
 date_now = datetime.datetime.now()
 
 class WAAS:
-    def __init__(self, host, time, url, attack_type, endpoint, src_ip, path, image, effect):
+    def __init__(self, host, time, namespace, url, attack_type, endpoint, src_ip, path, image, effect):
         self.host = host
         self.time = time
+        self.namespace = namespace
         self.url = url
         self.attack_type = attack_type
         self.endpoint = endpoint
@@ -151,12 +152,14 @@ def generate_waas_report():
     reports = {}
     for report in all_events:
         host = get_host(report["url"])
-        newReport = WAAS(host, report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"], report["effect"])
+        namespace = report["ns"][0]
+        newReport = WAAS(host, report["time"], namespace, report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"], report["effect"])
         if newReport.url not in reports:
             reports[newReport.url] = []
         reports[newReport.url].append({
             "host": newReport.host,
             "time": newReport.parse_time(),
+            "namespace": namespace,
             "attack_type": newReport.attack_type,
             "endpoint": newReport.endpoint,
             "src_ip": newReport.src_ip,
@@ -168,7 +171,7 @@ def generate_waas_report():
     with open('end_data.json', 'w') as f:
         f.write(json.dumps(reports, indent=4))
      
-    columns = ["Host", "URL", "Time", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
+    columns = ["Host", "URL", "Time", "Namespace", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
     filename = "WAAS_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
     write_waas_to_excel(filename, columns, reports)
 
@@ -250,7 +253,7 @@ def write_waas_to_excel(filename, cols, data):
     worksheet = workbook.add_worksheet("{}".format(date_now.strftime("%Y-%m-%d")))
 
     # WRITE HEADERS #
-    headers = ["host", "url", "time", "attack_type", "endpoint", "src_ip", "path", "image", "effect"]
+    headers = ["host", "url", "time", "namespace", "attack_type", "endpoint", "src_ip", "path", "image", "effect"]
 
     header_format = workbook.add_format({
         'bold': True,
@@ -284,6 +287,7 @@ def write_waas_to_excel(filename, cols, data):
             item.get("host", ""),
             url,
             item.get("time", ""),
+            item.get("namespace", ""),
             item.get("attack_type", ""),
             item.get("endpoint", ""),
             item.get("src_ip", ""),
