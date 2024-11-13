@@ -19,9 +19,9 @@ st.markdown(
     """
     
     ### **Before you get started**
-    **_Click the button below to initialize the database_**
+    **1. Click the button below to initialize the database**
     
-    **Note: You only need to perform this once**
+    _You only need to perform this once_
             
     """
 )
@@ -32,6 +32,17 @@ if st.button("Initialize Database", type="secondary"):
             st.error("Failed to initialize database: {}".format(db_res))
         else:
             st.success("Database initialized successfully!")
+
+st.markdown(
+    """
+    **2. Configure the environment variables**
+    
+    Click the button below to configure the environment variables
+    """
+)
+
+st.link_button("Configure Environment Variable", url="/Configuration")
+
 st.markdown(
     """
     
@@ -45,11 +56,20 @@ st.write()
 st.write("#### 1. Generate WAAS Data")
 st.write("Before you can access the WAAS page, please generate the data if no data is on the list of reports.")
 if st.button("Generate WAAS Data", type="primary"):
-    with st.spinner("Generating WAAS data..."):
-        parent_module.generate_waas_report()
-        success = st.success("WAAS data generated successfully!")
-        time.sleep(3)
-        success.empty()
+    console_path = os.environ.get('CONSOLE_PATH')
+    token = os.environ.get('TOKEN')
+    if console_path is None or console_path == "" or token is None or token == "":
+        st.error("Missing environment variable")
+    else:
+        with st.spinner("Generating WAAS data..."):
+            status_code = parent_module.generate_waas_report()
+            print("Status Code: ", status_code)
+            if status_code != 200 and status_code is not None:
+                st.error("Failed to generate WAAS data: {} - Check the environment variable configuration.".format(status_code))
+            else:
+                success = st.success("WAAS data generated successfully!")
+                time.sleep(3)
+                success.empty()
         
 st.write("#### 2. View WAAS Report")
 st.write("Click **'View'** to view the data analysis or click **'Download'** to download the Excel file.")
@@ -108,10 +128,3 @@ else:
                 if st.button("Delete", key=data["fullpath"]):
                     delete_report(data["filename"])
                         
-            
-st.markdown(
-    """
-    # Runtime Events
-    """
-    
-)

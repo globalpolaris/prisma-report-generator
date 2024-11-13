@@ -11,7 +11,8 @@ load_dotenv()
 date_now = datetime.datetime.now()
 
 class WAAS:
-    def __init__(self, time, url, attack_type, endpoint, src_ip, path, image, effect):
+    def __init__(self, host, time, url, attack_type, endpoint, src_ip, path, image, effect):
+        self.host = host
         self.time = time
         self.url = url
         self.attack_type = attack_type
@@ -98,7 +99,10 @@ def generate_container_model_report():
     filename = "Container_Model_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
     return all_models
     write_container_model_to_excel(filename=filename, cols=columns, data=all_models)
-    
+
+def get_host(url):
+    return url.split("//")[1].split("/")[0]
+
 def generate_waas_report():
     max_attempts = 5  # Number of retry attempts in case of rate limiting
     page_size = 100
@@ -119,7 +123,6 @@ def generate_waas_report():
         print("Response Code: {}".format(response.status_code))
         if response.status_code == 200:
             events = response.json()
-            print(json.dumps(events, indent=2))
             if not events:
                 print("\nAll events have been fetched!\n")
                 print("Events: ", events)
@@ -136,9 +139,10 @@ def generate_waas_report():
                 response = requests.request("GET", url, headers=headers, params=params)
                 if response.status_code == 200:
                     break
+            return response.status_code
         else:
             print("Max retry attempts reached. Exiting.")
-            break
+            return response.status_code
         
     with open("result_data_waas.json", "w") as f:
         f.write(json.dumps(all_events, indent=4))
@@ -146,10 +150,12 @@ def generate_waas_report():
 
     reports = {}
     for report in all_events:
-        newReport = WAAS(report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"], report["effect"])
+        host = get_host(report["url"])
+        newReport = WAAS(host, report["time"], report["url"], report["type"], '{} {}'.format(report["method"],report["urlPath"]), report["subnet"], report["urlPath"], report["imageName"], report["effect"])
         if newReport.url not in reports:
             reports[newReport.url] = []
         reports[newReport.url].append({
+            "host": newReport.host,
             "time": newReport.parse_time(),
             "attack_type": newReport.attack_type,
             "endpoint": newReport.endpoint,
@@ -162,7 +168,7 @@ def generate_waas_report():
     with open('end_data.json', 'w') as f:
         f.write(json.dumps(reports, indent=4))
      
-    columns = ["URL", "Time", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
+    columns = ["Host", "URL", "Time", "AttackType", "APIEndpoint", "IPAddress", "Path", "Image", "Effect"]
     filename = "WAAS_Report_{}.xlsx".format(date_now.strftime("%Y_%m_%d_%H-%M-%S"))
     write_waas_to_excel(filename, columns, reports)
 
@@ -244,7 +250,7 @@ def write_waas_to_excel(filename, cols, data):
     worksheet = workbook.add_worksheet("{}".format(date_now.strftime("%Y-%m-%d")))
 
     # WRITE HEADERS #
-    headers = ["url", "time", "attack_type", "endpoint", "src_ip", "path", "image", "effect"]
+    headers = ["host", "url", "time", "attack_type", "endpoint", "src_ip", "path", "image", "effect"]
 
     header_format = workbook.add_format({
         'bold': True,
@@ -275,6 +281,7 @@ def write_waas_to_excel(filename, cols, data):
                 prev_url = url
                 merge_start_row = row
             worksheet.write_row(row, 0, [
+            item.get("host", ""),
             url,
             item.get("time", ""),
             item.get("attack_type", ""),
