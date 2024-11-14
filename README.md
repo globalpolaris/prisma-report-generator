@@ -1,5 +1,5 @@
 # Pre-requisites
-1. Docker
+1. Docker (https://www.docker.com/products/docker-desktop/)
 
 # Installation
 1. Perform ```git clone https://github.com/globalpolaris/prisma-report-generator.git```
