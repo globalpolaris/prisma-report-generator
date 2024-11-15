@@ -108,7 +108,7 @@ def generate_waas_report():
     max_attempts = 5  # Number of retry attempts in case of rate limiting
     page_size = 100
     offset = 0
-    url = "{}/api/v33.01/audits/firewall/app/container".format(os.getenv("CONSOLE_PATH"))
+    url = "{}/api/v33.01/audits/firewall/app/container?from=2024-09-15T00:00:00Z&to=2024-11-15T00:00:00Z".format(os.getenv("CONSOLE_PATH"))
     headers = {
     'Accept': 'application/json',
     'Authorization': 'Basic {}'.format(os.getenv("TOKEN"))
