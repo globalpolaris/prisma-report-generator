@@ -51,6 +51,7 @@ st.markdown(
     """
     
 )
+
 st.write("# WAAS Events")
 st.write()
 st.write("#### 1. Generate WAAS Data")
@@ -82,16 +83,20 @@ st.markdown(
 )
 
 @st.dialog("Delete Report?")
-def delete_report(filename):
+def delete_report(filename, table):
     st.write("**{}** will be deleted permanently.".format(filename))
 
     if st.button("Delete"):
-        db.delete_file(data["fullpath"])
+        db.delete_file(data["fullpath"], table)
         os.remove(data["fullpath"])
         st.rerun()
         
 data_report_waas = []
-data_filename = db.get_files()
+data_filename = []
+try:
+    data_filename = db.get_files("waas_files")
+except Exception as e:
+    print(e)
 if len(data_filename) == 0:
     st.write("No WAAS data found. Click **Generate WAAS Data** button above.")
 else:
@@ -126,5 +131,77 @@ else:
                 st.download_button("Download", data=file_data, file_name=data["filename"], mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             with del_col:
                 if st.button("Delete", key=data["fullpath"]):
-                    delete_report(data["filename"])
+                    delete_report(data["filename"], "waas_files")
+                        
+
+
+## Runtime
+
+st.write("# Runtime Events")
+st.write()
+st.write("#### 1. Generate Runtime Data")
+st.write("Before you can access the Runtime page, please generate the data if no data is on the list of reports.")
+if st.button("Generate Runtime Data", type="primary"):
+    console_path = os.environ.get('CONSOLE_PATH')
+    token = os.environ.get('TOKEN')
+    if console_path is None or console_path == "" or token is None or token == "":
+        st.error("Missing environment variable")
+    else:
+        with st.spinner("Generating Runtime data..."):
+            status_code = parent_module.generate_runtime_report()
+            print("Status Code: ", status_code)
+            if status_code != 200 and status_code is not None:
+                st.error("Failed to generate Runtime data: {} - Check the environment variable configuration.".format(status_code))
+            else:
+                success = st.success("Runtime data generated successfully!")
+                time.sleep(3)
+                success.empty()
+        
+st.write("#### 2. View Runtime Report")
+st.write("Click **'View'** to view the data analysis or click **'Download'** to download the Excel file.")
+st.write("Only displaying 5 most recent reports.")
+st.markdown(
+    """
+    
+    """
+    
+)
+        
+data_report_runtime = []
+data_filename = db.get_files("runtime_files")
+if len(data_filename) == 0:
+    st.write("No Runtime data found. Click **Generate Runtime Data** button above.")
+else:
+    for file in data_filename:
+        index, filename, timestamp = file
+        fullpath = filename
+        if "\\" in filename:
+            filename = filename.split('\\')[1]
+        elif "/" in filename:
+            filename = filename.split('/')[1]
+        
+        new_data = {
+            "filename": filename,
+            "timestamp": timestamp,
+            "fullpath": fullpath
+        }
+        data_report_runtime.append(new_data)
+    if len(data_report_runtime) > 5:
+        data_report_runtime = data_report_runtime[-5:]
+    for idx, data in enumerate(data_report_runtime):
+        left_col, right_col = st.columns(2)
+        with open(data["fullpath"], "rb") as f:
+                    file_data = f.read()
+        with left_col:
+            st.write("**{}**\n{}".format(data["filename"], data["timestamp"]))
+        with right_col:
+            view_col, download_col, del_col = st.columns(3)
+            with view_col:
+                st.link_button("View", url="/Runtime?filename={}".format(data["fullpath"]))
+            with download_col:
+                
+                st.download_button("Download", data=file_data, file_name=data["filename"], mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with del_col:
+                if st.button("Delete", key=data["fullpath"]):
+                    delete_report(data["filename"], "runtime_files")
                         

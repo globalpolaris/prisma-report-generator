@@ -3,11 +3,13 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import timedelta, datetime
+import export_pdf
 import urllib.parse, os
 
 st.set_page_config(page_title='Prisma Cloud Report Dashboard', page_icon=':bar_chart:', layout='wide')
 if st.button("Clear Cache"):
     st.cache_data.clear()
+
 if "filename" in st.query_params:
     filename = st.query_params["filename"]
     
@@ -41,11 +43,6 @@ if "filename" in st.query_params:
             image_choices = [all_option] + image_options
             namespace_choices = [all_option] + namespace_options
             attack_type = st.sidebar.multiselect("Attack Type:", options=attack_type_choices, default=[])
-            # image = st.sidebar.multiselect(
-            #     "Image:",
-            #     options=image_choices,
-            #     default=[]
-            # )
             namespace = st.sidebar.multiselect(
                 "Namespace:",
                 options=namespace_choices,
@@ -72,13 +69,21 @@ if "filename" in st.query_params:
             path = st.sidebar.multiselect("Path:", options=[all_option] + path_options, default=[])
             path_condition = path_options if all_option in path or not path else path
             
+            # Check if filters are applied
+            filters = {
+                "Attack Type": attack_type if attack_type else "All",
+                "Namespace": namespace if namespace else "All",
+                "Host": host if host else "All",
+                "Path": path if path else "All",
+            }   
+            
             # df_selection = df_selection.query("Host in @host_condition and Path in @path_condition")
             df_selection = df.query(
                 "Namespace in @namespace_condition and Host in @host_condition and Path in @path_condition and AttackType in @attack_type_condition"
             )
             if df_selection.empty:
                 st.warning("No data available for the selected filters. Please adjust your filters.")
-                return None, None, None, None, None, None, None, None, None, None, None, None, None
+                return None, None, None, None, None, None, None, None, None, None, None, None, None, None
             host_counts = df_selection["Host"].value_counts().nlargest(5).sort_values(ascending=True)
             
             
@@ -107,12 +112,7 @@ if "filename" in st.query_params:
             end_time = df_selection['Time'].max()
             start_time = end_time - timedelta(days=3)
             df_last_3_days = df_selection[(df_selection["Time"] >= start_time) & (df_selection["Time"] <= end_time)]
-            # print(df_last_3_days)
             
-                # attack_time = df_last_3_days.groupby([df_selection['Time'].dt.floor('h'), 'AttackType']).size().reset_index(name='Count')
-                # attack_time.set_index(['Time', 'AttackType'], inplace=True)
-                # attack_time = attack_time.unstack().resample('15min').interpolate('linear').stack().reset_index()
-                # attack_time['Count'] = attack_time['Count'].round().astype(int)
             if not df_last_3_days.empty:
                 attack_time = df_last_3_days.groupby([df_selection['Time'].dt.floor('h'), 'AttackType']).size().reset_index(name='Count')
                 attack_time.set_index(['Time', 'AttackType'], inplace=True)
@@ -122,7 +122,7 @@ if "filename" in st.query_params:
                 attack_time = pd.DataFrame(columns=['Time', 'AttackType', 'Count'])           
                 
             
-            return (image_attack_counts, top_5_host_unique_attacks, max_unique_attacks_host, max_unique_attacks_count,
+            return (filters, image_attack_counts, top_5_host_unique_attacks, max_unique_attacks_host, max_unique_attacks_count,
             unique_attack_counts, df_selection, host_counts, attack_counts, filtered_attack_count, 
             attacker_ip, attack_time, attack_type_choices, image_choices)
 
@@ -140,11 +140,10 @@ if "filename" in st.query_params:
         )
 
         df = load_data()
-        print(df)
         
-        images, top_5_host_unique_attacks, max_unique_attacks_url,max_unique_attacks_count, unique_attack_counts, df_selection, host_counts, attack_counts, filtered_attack_count, attacker_ip, attack_time, attack_type_choices, image_choices = process_data(df)
+        filters, images, top_5_host_unique_attacks, max_unique_attacks_url,max_unique_attacks_count, unique_attack_counts, df_selection, host_counts, attack_counts, filtered_attack_count, attacker_ip, attack_time, attack_type_choices, image_choices = process_data(df)
         # def plot_chart_top_url_distinct_attack(url_distinct):
-            
+        
             
 
         def plot_chart_most_attacks(host_counts):
@@ -188,7 +187,9 @@ if "filename" in st.query_params:
                     title="Attack Type Frequency Over the Last 3 Days (Spline)",
                     xaxis_title="Time",
                     yaxis_title="Number of Attacks",
-                    legend_title="Attack Type"
+                    legend_title="Attack Type",
+                    template="plotly",
+                    xaxis=dict(type="date")
                 )
 
                 return fig
@@ -196,7 +197,6 @@ if "filename" in st.query_params:
         # fig = px.area(attack_time, x="Time", y="Count", color="AttackType", title="Attack Type Distribution Over Time", labels={"Time": "Time", "Count": "Number of Attacks", "AttackType": "Type of Attack"})
 
         def display_top_url_unique_attacks(urls):
-            print(urls)
             if urls is not None:
                 fig_url = px.bar(urls, x=urls.values, y=urls.index, 
                         labels={'x': 'Number of Attacks', 'y': 'Attack Type'},
@@ -238,34 +238,56 @@ if "filename" in st.query_params:
                 )
                 return fig
             return image_attack_counts
-        if display_top_url_unique_attacks(top_5_host_unique_attacks) is not None:
-            st.plotly_chart(display_top_url_unique_attacks(top_5_host_unique_attacks))
+        
+        most_attack = plot_chart_most_attacks(host_counts)
+        top_attack = plot_chart_top_attack(attack_counts)
+        attack_time = attack_type_by_time(attack_time)
+        top_url_unique_attacks = display_top_url_unique_attacks(top_5_host_unique_attacks)
+        top_ban = top_ban_attacks(filtered_attack_count)
+        top_attacker_ip = top_attacker(attacker_ip)
+        image_attack_count = show_image_attack_count(images)
+        
+        if top_url_unique_attacks is not None:
+            st.plotly_chart(top_url_unique_attacks)
         left_col, right_col = st.columns(2)
         with left_col:
-            if plot_chart_most_attacks(host_counts) is not None:
-                st.plotly_chart(plot_chart_most_attacks(host_counts))
+            if most_attack is not None:
+                st.plotly_chart(most_attack)
         with right_col:
-            if plot_chart_top_attack(attack_counts) is not None:
-                st.plotly_chart(plot_chart_top_attack(attack_counts))
+            if top_attack is not None:
+                st.plotly_chart(top_attack)
 
-        if attack_type_by_time(attack_time) is not None:
-            st.plotly_chart(attack_type_by_time(attack_time))
+        if attack_time is not None:
+            st.plotly_chart(attack_time)
 
         left_col, right_col = st.columns(2)
         with left_col:
-            if top_ban_attacks(filtered_attack_count) is not None:
-                st.plotly_chart(top_ban_attacks(filtered_attack_count))
+            if top_ban is not None:
+                st.plotly_chart(top_ban)
         with right_col:
-            if top_attacker(attacker_ip) is not None:
-                st.plotly_chart(top_attacker(attacker_ip))
+            if top_attacker_ip is not None:
+                st.plotly_chart(top_attacker_ip)
 
-        if show_image_attack_count(images) is not None:
-            st.plotly_chart(show_image_attack_count(images))
+        if image_attack_count is not None:
+            st.plotly_chart(image_attack_count)
         
         if df_selection is not None:
             st.subheader("WAAS Events Details")
             st.dataframe(df_selection)
-
+        
+        if st.button("Export to PDF"):
+            fig_list = [most_attack,top_attack,attack_time,top_url_unique_attacks,top_ban,top_attacker_ip,image_attack_count]
+            pdf_data = export_pdf.generate_pdf(fig_list, filters)
+            if pdf_data:
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_data,
+                    file_name=f"WAAS Events Report - {datetime.now().strftime('%A, %d %B %Y')}",
+                    mime="application/pdf",
+                )
+            else:
+                st.error("Failed to generate PDF. Please check the logs.")
+        
         # print("Unique attacks url: ")
         # print(top_5_url_unique_attacks)
         # print("Max attacks: ")
