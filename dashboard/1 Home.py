@@ -119,7 +119,7 @@ else:
     for idx, data in enumerate(data_report_waas):
         left_col, right_col = st.columns(2)
         with open(data["fullpath"], "rb") as f:
-                    file_data = f.read()
+            file_data = f.read()
         with left_col:
             st.write("**{}**\n{}".format(data["filename"], data["timestamp"]))
         with right_col:

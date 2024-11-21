@@ -146,6 +146,7 @@ if "filename" in st.query_params:
         
             
 
+        @st.cache_data
         def plot_chart_most_attacks(host_counts):
             if host_counts is not None:
                 fig_url = px.bar(host_counts, x=host_counts.values, y=host_counts.index, 
@@ -155,6 +156,7 @@ if "filename" in st.query_params:
                 return fig_url
             else:
                 return None
+        @st.cache_data
         def plot_chart_top_attack(attack_counts):
             if attack_counts is not None:
                 fig_url = px.bar(attack_counts, x=attack_counts.values, y=attack_counts.index, 
@@ -164,6 +166,7 @@ if "filename" in st.query_params:
                 return fig_url
             return attack_counts
 
+        @st.cache_data
         def attack_type_by_time(attack_time):
             if attack_time is not None:
                 fig = go.Figure()
@@ -196,6 +199,7 @@ if "filename" in st.query_params:
             return None
         # fig = px.area(attack_time, x="Time", y="Count", color="AttackType", title="Attack Type Distribution Over Time", labels={"Time": "Time", "Count": "Number of Attacks", "AttackType": "Type of Attack"})
 
+        @st.cache_data
         def display_top_url_unique_attacks(urls):
             if urls is not None:
                 fig_url = px.bar(urls, x=urls.values, y=urls.index, 
@@ -207,6 +211,7 @@ if "filename" in st.query_params:
                 return None
         left_col, right_col = st.columns(2)
 
+        @st.cache_data
         def top_ban_attacks(filtered_attack_count):
             # print(filtered_attack_count)
             if filtered_attack_count is not None:
@@ -216,6 +221,7 @@ if "filename" in st.query_params:
                         orientation="h", template="plotly_white", text=filtered_attack_count.values)
                 return fig_url
             return filtered_attack_count
+        @st.cache_data
         def top_attacker(attacker_ip):
             if attacker_ip is not None:
                 fig_url = px.bar(attacker_ip, x=attacker_ip.values, y=attacker_ip.index, 
@@ -224,6 +230,7 @@ if "filename" in st.query_params:
                         orientation="h", template="plotly_white", text=attacker_ip.values)
                 return fig_url
             return attacker_ip
+        @st.cache_data
         def show_image_attack_count(image_attack_counts):
             if image_attack_counts is not None:
                 fig = px.bar(
@@ -277,7 +284,7 @@ if "filename" in st.query_params:
         
         if st.button("Export to PDF"):
             fig_list = [most_attack,top_attack,attack_time,top_url_unique_attacks,top_ban,top_attacker_ip,image_attack_count]
-            pdf_data = export_pdf.generate_pdf(fig_list, filters)
+            pdf_data = export_pdf.generate_pdf(fig_list, filters, "WAAS")
             if pdf_data:
                 st.download_button(
                     label="Download PDF",
