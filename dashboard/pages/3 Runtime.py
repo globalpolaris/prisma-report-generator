@@ -309,6 +309,7 @@ if "filename" in st.query_params:
                 st.plotly_chart(container_unique_attack_counts_chart)
         
         # Display data summary
+        st.write("### Cluster Summary")
         df_summary = create_summary_dataframe(df_selection)
         st.dataframe(df_summary)
         data_summary = generate_message_content(df_summary)
